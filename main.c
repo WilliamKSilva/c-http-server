@@ -1,6 +1,13 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <errno.h>
+
+#define BUFFER_SIZE 1025
 
 void main()
 {
@@ -23,9 +30,13 @@ void main()
 
     addr.sin_family = AF_INET;
     addr.sin_port = socketPort;
-    inet_aton("127.0.0.1", &addr.sin_addr.s_addr);
+    inet_aton("127.0.0.1", &addr.sin_addr);
 
-    int addrConnect = bind(createdSocket, &addr, sizeof(addr));
+    /*
+        Typecasting o segundo argumento sockaddr. Sockaddr e um descriptor de socket generico
+        enquanto o sockaddr_in e usado para sockets de conexao IP, INET.
+    */
+    int addrConnect = bind(createdSocket, (struct sockaddr *)&addr, sizeof(addr));
 
     if (addrConnect == -1)
     {
@@ -40,11 +51,28 @@ void main()
         printf("Error trying to start listening on socket");
     }
 
-    int acceptConnections = accept(createdSocket, &addr, sizeof(addr));
+    socklen_t addr_size;
+    addr_size = sizeof(addr);
+
+    int acceptConnections = accept(createdSocket, (struct sockaddr *)&addr, &addr_size);
 
     if (acceptConnections == -1)
     {
         printf("Error trying to accept a connection on socket");
         exit(0);
     }
+
+    char buffer[BUFFER_SIZE];
+
+    ssize_t bytes = recv(acceptConnections, &buffer, BUFFER_SIZE - 1, 0);
+
+    if (bytes == -1)
+    {
+        perror("Error receiving data from socket");
+        return;
+    }
+
+    buffer[bytes] = '\0';
+
+    printf("Received data: %s\n", buffer);
 }
