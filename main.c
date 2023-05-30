@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 
 void main()
 {
@@ -16,11 +17,15 @@ void main()
         exit(0);
     }
 
-    struct sockaddr addr = {AF_INET, SOCK_STREAM};
-    socklen_t addrlen = sizeof(addr);
-    struct sockaddr *addrPtr = &addr;
+    unsigned socketPort = htons(3001);
 
-    int addrConnect = bind(createdSocket, addrPtr, addrlen);
+    struct sockaddr_in addr;
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = socketPort;
+    inet_aton("127.0.0.1", &addr.sin_addr.s_addr);
+
+    int addrConnect = bind(createdSocket, &addr, sizeof(addr));
 
     if (addrConnect == -1)
     {
@@ -33,5 +38,13 @@ void main()
     if (socketListening == -1)
     {
         printf("Error trying to start listening on socket");
+    }
+
+    int acceptConnections = accept(createdSocket, &addr, sizeof(addr));
+
+    if (acceptConnections == -1)
+    {
+        printf("Error trying to accept a connection on socket");
+        exit(0);
     }
 }
