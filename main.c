@@ -9,13 +9,14 @@
 
 #define BUFFER_SIZE 1025
 
-void main()
+struct socketCreated
 {
-    printf("Main was called");
+    struct sockaddr_in addr;
+    int socket;
+};
 
-    /* A conexao de um socket consiste em um estilo de conexao
-    e o protocolo que vai ser implementado */
-
+struct socketCreated createSocket()
+{
     int createdSocket = socket(PF_INET, SOCK_STREAM, 0);
 
     if (createdSocket == -1)
@@ -44,7 +45,24 @@ void main()
         exit(0);
     }
 
-    int socketListening = listen(createdSocket, 10);
+    struct socketCreated socket =
+        {
+            addr,
+            createdSocket};
+
+    return socket;
+}
+
+void main()
+{
+    printf("Main was called");
+
+    /* A conexao de um socket consiste em um estilo de conexao
+    e o protocolo que vai ser implementado */
+
+    struct socketCreated createdSocket = createSocket();
+
+    int socketListening = listen(createdSocket.socket, 10);
 
     if (socketListening == -1)
     {
@@ -52,9 +70,9 @@ void main()
     }
 
     socklen_t addr_size;
-    addr_size = sizeof(addr);
+    addr_size = sizeof(createdSocket.addr);
 
-    int acceptConnections = accept(createdSocket, (struct sockaddr *)&addr, &addr_size);
+    int acceptConnections = accept(createdSocket.socket, (struct sockaddr *)&createdSocket.addr, &addr_size);
 
     if (acceptConnections == -1)
     {
