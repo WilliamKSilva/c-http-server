@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <unistd.h>
 
 #define BUFFER_SIZE 1025
 
@@ -41,7 +42,16 @@ struct socketCreated createSocket()
 
     if (addrConnect == -1)
     {
-        printf("Error trying to create an socket address");
+        perror("Error trying to create an socket address");
+        exit(0);
+    }
+
+    int reuse = 1;
+    int setSocketOpt = setsockopt(createdSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+
+    if (setSocketOpt == -1)
+    {
+        perror("Error trying to set options to socket");
         exit(0);
     }
 
@@ -55,8 +65,6 @@ struct socketCreated createSocket()
 
 void main()
 {
-    printf("Main was called");
-
     /* A conexao de um socket consiste em um estilo de conexao
     e o protocolo que vai ser implementado */
 
@@ -66,31 +74,39 @@ void main()
 
     if (socketListening == -1)
     {
-        printf("Error trying to start listening on socket");
+        perror("Error trying to start listening on socket\n");
+        return;
     }
 
     socklen_t addr_size;
     addr_size = sizeof(createdSocket.addr);
 
-    int acceptConnections = accept(createdSocket.socket, (struct sockaddr *)&createdSocket.addr, &addr_size);
-
-    if (acceptConnections == -1)
+    do
     {
-        printf("Error trying to accept a connection on socket");
-        exit(0);
-    }
+        int acceptConnections = accept(createdSocket.socket, (struct sockaddr *)&createdSocket.addr, &addr_size);
 
-    char buffer[BUFFER_SIZE];
+        if (acceptConnections == -1)
+        {
+            perror("Error trying to accept a connection on socket\n");
+            return;
+        }
 
-    ssize_t bytes = recv(acceptConnections, &buffer, BUFFER_SIZE - 1, 0);
+        char buffer[BUFFER_SIZE];
 
-    if (bytes == -1)
-    {
-        perror("Error receiving data from socket");
-        return;
-    }
+        ssize_t bytes = recv(acceptConnections, &buffer, BUFFER_SIZE - 1, 0);
 
-    buffer[bytes] = '\0';
+        if (bytes == -1)
+        {
+            perror("Error receiving data from socket\n");
+            return;
+        }
 
-    printf("Received data: %s\n", buffer);
+        buffer[bytes] = '\0';
+
+        printf("Received data: %s\n", buffer);
+
+        close(acceptConnections);
+
+        printf("Socket connection closed\n");
+    } while (1);
 }
